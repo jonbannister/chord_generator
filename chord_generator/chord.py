@@ -16,16 +16,27 @@ def generateChordsFromFrequencies(chord_frequencies, durations=None, filename=No
                         Default is balanced (i.e. 1/n for n notes in the chord)
                             e.g. [None, None, [0.1, 0.1, 0.1, 0.4, 0.3], None]
     '''
+
+    # Some validations
+    if durations and len(durations) != len(chord_frequencies):
+        raise ValueError('If durations are specified, they must be specified for each chord.')
+    if weights and len(weights) != len(chord_frequencies):
+        raise ValueError('If per-chord weightings are specified, they must be specified for each chord (but they can be None).')
+
     sec_durations = durations or [1.0]*len(chord_frequencies)
     sampleRate = 44100.0
     amplitude = 8000.0
-    sample_durations = [sampleRate*duration for duration in sec_durations]
+    sample_durations = [int(sampleRate*duration) for duration in sec_durations]
     sine_wave = []
-    for (freqs, sample_size, weighting) in zip(chord_frequencies, sample_durations, weights):
-        chord_balance = weighting or ([1.0/len(freqs)] * len(freqs))
+
+    chord_weights = []
+    for (i,fs) in enumerate(chord_frequencies):
+        chord_weights.append(weights[i] if (weights and weights[i]) else ([1.0/len(fs)] * len(fs)))
+
+    for (freqs, sample_size, weighting) in zip(chord_frequencies, sample_durations, chord_weights):
         for x in range(sample_size):
             sample = 0
-            for (freq, coefficient) in zip(freqs, chord_balance):
+            for (freq, coefficient) in zip(freqs, weighting):
                 sample += coefficient * math.sin(2*math.pi*freq*(x/sampleRate))
             sine_wave.append(sample)
     logging.debug('Sine wave has been computed, saving to file.')
@@ -41,7 +52,7 @@ def generateChordsFromFrequencies(chord_frequencies, durations=None, filename=No
             logging.debug('Progress: %.2f%% (%d/%d)' % ((i*100.0/total), i, total))
         f.writeframes(struct.pack('h', (frequency*amplitude/2)))
     f.close()
-    logging.debug('Save complete.')
+    logging.debug('Save to %s complete.' % filename)
     
 def main():
     generateChordsFromFrequencies(
