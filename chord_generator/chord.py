@@ -13,7 +13,6 @@ def generateChordsFromFrequencies(chord_frequencies, durations=None, filename=No
         :param durations (iterable of floats): An array of durations (in seconds) in which the chords should appear
         :param filename (str): The name of the output file. Defaults to my_chord.wav
         :param weights: Allows you to specify how loud you want each note in each chord to sound.
-                        The whole list for each chord should sum up to one. 
                         Default is balanced (i.e. 1/n for n notes in the chord)
                             e.g. [None, None, [0.1, 0.1, 0.1, 0.4, 0.3], None]
     '''
