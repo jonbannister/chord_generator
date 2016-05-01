@@ -1,7 +1,43 @@
 import logging
 import math
+import re
 import struct
 import wave
+
+# Set up our logging
+logger = logging.getLogger('chord_generator')
+logger.setLevel(logging.DEBUG)
+ch = logging.StreamHandler()
+ch.setLevel(logging.DEBUG)
+formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+ch.setFormatter(formatter)
+logger.addHandler(ch)
+
+
+def getFrequency(noteName):
+    '''
+        Returns the frequency of the given note. 
+        :param noteName: The note to be translated into a frequency.
+                         Notation: Note name + octave e.g. 'A#5', 'Bb2', 'A0', 'G9'
+        Reference: https://en.wikipedia.org/wiki/Piano_key_frequencies 
+    '''
+    
+    # In order to get the pitch, we need to shift from C by x semitones
+    semitone_shifts = {'A':9.0, 'A#':10.0, 'B':11.0, 'C':0.0, 'C#':1.0, 'D':2.0, 
+                       'D#':3.0, 'E':4.0, 'F':5.0, 'F#':6.0, 'G':7.0, 'G#':8.0}
+
+    # This regex splits out the note (e.g. A or D#) from the octave (e.g. 4)
+    note, octave = re.match('([A-G](?:#|b)?)(\d+)', noteName).groups()
+
+    try:
+        octave = int(octave)
+    except ValueError:
+        logger.error('The given octave should be an integer (e.g. 2 or 6).')
+        raise
+
+    key_number = 4 + semitone_shifts[note] + ((octave-1) * 12.0)
+    a_for_octave = math.pow(2, ((key_number-49)/12)) * 440.0
+    return a_for_octave
 
 def generateChordsFromFrequencies(chord_frequencies, durations=None, filename=None, weights=None):
     ''' 
@@ -40,7 +76,7 @@ def generateChordsFromFrequencies(chord_frequencies, durations=None, filename=No
             for (freq, coefficient) in zip(freqs, weighting):
                 sample += coefficient * math.sin(2*math.pi*freq*(x/sampleRate))
             sine_wave.append(sample)
-    logging.debug('Sine wave has been computed, saving to file.')
+    logger.debug('Sine wave has been computed, saving to file.')
             
     # Write our sine wave to the .wav file.
     f = wave.open(filename or 'my_chord.wav', 'w')
@@ -50,7 +86,15 @@ def generateChordsFromFrequencies(chord_frequencies, durations=None, filename=No
     total = float(len(sine_wave))
     for i,frequency in enumerate(sine_wave):
         if i%(total/10.0) == 0:
-            logging.debug('Progress: %.2f%% (%d/%d)' % ((i*100.0/total), i, total))
+            logger.debug('Progress: %.2f%% (%d/%d)' % ((i*100.0/total), i, total))
         f.writeframes(struct.pack('h', (frequency*amplitude/2)))
     f.close()
-    logging.debug('Save to %s complete.' % filename)
+    logger.debug('Save to %s complete.' % filename)
+
+
+def main():
+    generateChordsFromFrequencies(
+                    [[880.0, 1100.0, 1320.0, 1760.0], [880.0, 1100.0, 1320.0, 1479.98, 1760.0], [830.609, 987.767, 1320.0, 1661.22]], 
+                    durations=[1, 1, 2], 
+                    filename='C:/Temp/mychordprogression.wav', 
+                    weights=[None, [0.1, 0.1, 0.1, 0.4, 0.3], None])
