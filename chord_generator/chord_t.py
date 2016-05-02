@@ -42,5 +42,8 @@ class ChordTests(unittest.TestCase):
 		self.assertEqual(chord._getSemitoneShift('E#'), 5.0)
 		self.assertEqual(chord._getSemitoneShift('F'), 5.0)
 
+		# B# should go from 11 -> 0 since we are base 12
+		self.assertEqual(chord._getSemitoneShift('B#'), 0.0)
+
 
 unittest.main()
