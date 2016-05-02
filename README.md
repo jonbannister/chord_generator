@@ -14,4 +14,18 @@ chord.generateChordsFromFrequencies(
                     durations=[1, 1, 2], 
                     filename='C:/Temp/mychordprogression.wav', 
                     weights=[None, [0.1, 0.1, 0.1, 0.4, 0.3], None])
+
+# A phrygian cadence from Bach
+chord.generateChordsFromFrequencies(
+                    chordToFrequencies([
+                        ['G4', 'E4',  'B3',  'E3'],
+                        ['G4', 'G4',  'B3',  'D3'],
+                        ['A4', 'F#4', 'C4',  'C3'],
+                        ['A4', 'E4',  'C4',  'C3'],
+                        ['B4', 'D#4', 'F#3', 'B2'],
+                        ]),
+                    durations=[0.5, 0.55, 0.6, 0.75, 2], 
+                    filename='C:/Temp/bach.wav')
+
+
 ```
