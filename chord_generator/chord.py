@@ -13,6 +13,16 @@ formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(messag
 ch.setFormatter(formatter)
 logger.addHandler(ch)
 
+SEMITONES_FROM_C = {'A':9.0, 'B':11.0, 'C':0.0, 'D':2.0, 'E':4.0, 'F':5.0, 'G':7.0}
+
+def _getSemitoneShift(note):
+    ''' 
+        Returns the number of semitones you must go up from C to reach the given note.
+        This assumes that you only have one sharp (#) or flat (b) in the note.
+    '''
+    adj = 1.0 if '#' in note else -1.0 if 'b' in note else 0.0
+    return (SEMITONES_FROM_C[note[0]] + adj) % 12
+
 
 def getFrequency(noteName):
     '''
@@ -21,22 +31,26 @@ def getFrequency(noteName):
                          Notation: Note name + octave e.g. 'A#5', 'Bb2', 'A0', 'G9'
         Reference: https://en.wikipedia.org/wiki/Piano_key_frequencies 
     '''
-    
-    # In order to get the pitch, we need to shift from C by x semitones
-    semitone_shifts = {'A':9.0, 'A#':10.0, 'B':11.0, 'C':0.0, 'C#':1.0, 'D':2.0, 
-                       'D#':3.0, 'E':4.0, 'F':5.0, 'F#':6.0, 'G':7.0, 'G#':8.0}
+
+    if not noteName:
+        logger.warning('No note passed to getFrequency, returning None.')
+        return None
 
     # This regex splits out the note (e.g. A or D#) from the octave (e.g. 4)
-    note, octave = re.match('([A-G](?:#|b)?)(\d+)', noteName).groups()
+    matched = re.match('([A-G](?:#|b)?)(\d+)', noteName)
+    if not matched:
+        raise ValueError('Syntax to getFrequency incorrect - should be of the form "A#6" or "D4".')
 
-    try:
-        octave = int(octave)
-    except ValueError:
-        logger.error('The given octave should be an integer (e.g. 2 or 6).')
-        raise
+    note, octave = matched.groups()
+    octave = int(octave)
 
-    key_number = 4 + semitone_shifts[note] + ((octave-1) * 12.0)
+    # Get the number of the key on the keyboard. 
+    # We add 4 here because the count starts at C, but the keys begin at A.
+    key_number = 4 + _getSemitoneShift(note) + ((octave-1) * 12.0)
+
+    # Finally we calculate the frequency relative to A4 (440Hz)
     a_for_octave = math.pow(2, ((key_number-49)/12)) * 440.0
+
     return a_for_octave
 
 def generateChordsFromFrequencies(chord_frequencies, durations=None, filename=None, weights=None):
